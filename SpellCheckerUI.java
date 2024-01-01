@@ -107,32 +107,39 @@ public class SpellCheckerUI extends JFrame {
     }
 
     private class CheckTextButtonListener implements ActionListener {
+        String lastDictionaryFilePath = "", lastTextFilePath = "";
         @Override
         public void actionPerformed(ActionEvent e) {
             String dictionaryFilePath = dictionaryTextField.getText();
             String textFilePath = textFileTextField.getText();
-
-            List<String> dictionary = FileIO.loadLines(dictionaryFilePath);
+    
+            List<String> dictionary = FileIO.loadWords(dictionaryFilePath);
             if (dictionary == null) {
                 resultTextArea.setText("Failed to load the dictionary.");
                 return;
             }
-
+    
             List<String> textContent = FileIO.loadWords(textFilePath);
             if (textContent == null) {
                 resultTextArea.setText("Failed to load the text file.");
                 return;
             }
-
+    
             boolean isCaseSensitive = caseSensitiveCheckBox.isSelected();
-
-            spellChecker = new SpellChecker(dictionary, isCaseSensitive);
-
-            // Load or update the custom dictionary (if needed)
-            addWordsToCustomDictionary();
-
+    
+            System.out.println(dictionaryFilePath.equals(lastDictionaryFilePath));
+            System.out.println(textFilePath.equals(lastTextFilePath));
+            if(!dictionaryFilePath.equals(lastDictionaryFilePath) || !textFilePath.equals(lastTextFilePath)){
+                spellChecker = new SpellChecker(dictionary, isCaseSensitive);
+                lastDictionaryFilePath = dictionaryFilePath;
+                lastTextFilePath = textFilePath;
+            }
+    
+            // Load or update the custom dictionary
+            addWordsToCustomDictionary(customWordsTextField.getText().trim().split("\\s+"));
+    
             List<String> correctedText = new ArrayList<>();
-
+    
             for (String word : textContent) {
                 if (!spellChecker.isSpellingCorrect(word)) {
                     List<String> suggestions = spellChecker.getSuggestions(word);
@@ -144,11 +151,11 @@ public class SpellCheckerUI extends JFrame {
                 }
                 correctedText.add(word);
             }
-
+    
             resultTextArea.setText(String.join(" ", correctedText));
         }
     }
-
+    
     private String showFileChooser(String title) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(title);
@@ -165,6 +172,7 @@ public class SpellCheckerUI extends JFrame {
     private void addWordsToCustomDictionary(String... words) {
         if (spellChecker != null) {
             for (String word : words) {
+                System.out.println(word);
                 spellChecker.addWordToCustomDictionary(word);
             }
         }

@@ -17,12 +17,16 @@ public class SpellChecker {
     }
 
     public boolean isSpellingCorrect(String word) {
+        String lowerCaseWord = word.toLowerCase();
+    
         if (caseSensitive) {
-            return dictionary.contains(word.toLowerCase()) || customDictionary.contains(word.toLowerCase());
+            return dictionary.contains(lowerCaseWord) || customDictionary.contains(lowerCaseWord);
         } else {
-            return dictionary.stream().anyMatch(dictWord -> dictWord.equalsIgnoreCase(word));
+            return dictionary.stream().anyMatch(dictWord -> dictWord.equalsIgnoreCase(word)) ||
+                   customDictionary.stream().anyMatch(customWord -> customWord.equalsIgnoreCase(word));
         }
     }
+    
 
     public List<String> getSuggestions(String word) {
         List<String> suggestions = new ArrayList<>();
@@ -30,6 +34,11 @@ public class SpellChecker {
         for (String dictWord : dictionary) {
             if (calculateLevenshteinDistance(word, dictWord) <= 2) {
                 suggestions.add(dictWord);
+            }
+        }
+        for (String customWord : customDictionary) {
+            if (calculateLevenshteinDistance(word, customWord) <= 2) {
+                suggestions.add(customWord);
             }
         }
 
