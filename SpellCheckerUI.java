@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +14,7 @@ public class SpellCheckerUI extends JFrame {
     private JCheckBox caseSensitiveCheckBox;
     private JTextField customWordsTextField;
     private JTextArea resultTextArea;
+    private JLabel timeLabel;
 
     private SpellChecker spellChecker;
 
@@ -25,7 +28,7 @@ public class SpellCheckerUI extends JFrame {
     }
 
     private void createUIComponents() {
-        JPanel inputPanel = new JPanel(new GridLayout(6, 2));
+        JPanel inputPanel = new JPanel(new GridLayout(7, 2));
 
         JLabel dictionaryLabel = new JLabel("Dictionary File Path:");
         dictionaryTextField = new JTextField();
@@ -48,6 +51,8 @@ public class SpellCheckerUI extends JFrame {
         JButton checkTextButton = new JButton("Check Text");
         checkTextButton.addActionListener(new CheckTextButtonListener());
 
+        timeLabel = new JLabel("Time taken: ");
+
         inputPanel.add(dictionaryLabel);
         inputPanel.add(dictionaryTextField);
         inputPanel.add(loadDictionaryButton);
@@ -65,6 +70,9 @@ public class SpellCheckerUI extends JFrame {
         inputPanel.add(new JLabel());
         inputPanel.add(new JLabel());
         inputPanel.add(checkTextButton);
+
+        // Add timeLabel to the UI
+        inputPanel.add(timeLabel);
 
         resultTextArea = new JTextArea();
         resultTextArea.setEditable(false);
@@ -108,38 +116,39 @@ public class SpellCheckerUI extends JFrame {
 
     private class CheckTextButtonListener implements ActionListener {
         String lastDictionaryFilePath = "", lastTextFilePath = "";
+
         @Override
         public void actionPerformed(ActionEvent e) {
+            long startTime = System.currentTimeMillis(); // Record start time
+
             String dictionaryFilePath = dictionaryTextField.getText();
             String textFilePath = textFileTextField.getText();
-    
+
             List<String> dictionary = FileIO.loadWords(dictionaryFilePath);
             if (dictionary == null) {
                 resultTextArea.setText("Failed to load the dictionary.");
                 return;
             }
-    
+
             List<String> textContent = FileIO.loadWords(textFilePath);
             if (textContent == null) {
                 resultTextArea.setText("Failed to load the text file.");
                 return;
             }
-    
+
             boolean isCaseSensitive = caseSensitiveCheckBox.isSelected();
-    
-            System.out.println(dictionaryFilePath.equals(lastDictionaryFilePath));
-            System.out.println(textFilePath.equals(lastTextFilePath));
-            if(!dictionaryFilePath.equals(lastDictionaryFilePath) || !textFilePath.equals(lastTextFilePath)){
+
+            if (!dictionaryFilePath.equals(lastDictionaryFilePath) || !textFilePath.equals(lastTextFilePath)) {
                 spellChecker = new SpellChecker(dictionary, isCaseSensitive);
                 lastDictionaryFilePath = dictionaryFilePath;
                 lastTextFilePath = textFilePath;
             }
-    
+
             // Load or update the custom dictionary
             addWordsToCustomDictionary(customWordsTextField.getText().trim().split("\\s+"));
-    
+
             List<String> correctedText = new ArrayList<>();
-    
+
             for (String word : textContent) {
                 if (!spellChecker.isSpellingCorrect(word)) {
                     List<String> suggestions = spellChecker.getSuggestions(word);
@@ -151,11 +160,27 @@ public class SpellCheckerUI extends JFrame {
                 }
                 correctedText.add(word);
             }
-    
+
             resultTextArea.setText(String.join(" ", correctedText));
+
+            long totalTime = System.currentTimeMillis() - startTime;
+            timeLabel.setText("Time taken: " + totalTime + " ms");
+
+            String outputFilePath = textFilePath.replace(".txt", "_corrected.txt");
+            saveCorrectedTextToFile(correctedText, outputFilePath);
+        }
+
+        private void saveCorrectedTextToFile(List<String> correctedText, String filePath) {
+            try (FileWriter writer = new FileWriter(filePath)) {
+                for (String word : correctedText) {
+                    writer.write(word + " ");
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
-    
+
     private String showFileChooser(String title) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(title);

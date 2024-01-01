@@ -25,11 +25,9 @@ public class FileIO {
         }
     }
 
-    public static void saveLines(String filePath, List<String> lines) {
+    public static void saveToFile(String content, String filePath) {
         try (FileWriter writer = new FileWriter(filePath)) {
-            for (String line : lines) {
-                writer.write(line + "\n");
-            }
+            writer.write(content);
         } catch (IOException e) {
             e.printStackTrace();
         }
